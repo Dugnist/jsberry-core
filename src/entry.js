@@ -7,6 +7,7 @@
  */
 
 const CONFIG = require('./core/config')();
+const Model = require('./core/model');
 const Logger = require('./core/logger');
 const ROUTER = require('./core/router');
 const APP = require('./core/bootstrap');
@@ -23,6 +24,7 @@ APP.use({
   utils,
   ROUTER,
   CONFIG,
+  Model,
   show: Logger,
   ACTIONS: new Mediator(),
 });

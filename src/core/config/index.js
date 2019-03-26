@@ -15,11 +15,15 @@ const environment = {
 
 module.exports = (mode = process.env.NODE_ENV) => Object.assign(
   {
-    name: 'JSBerry',
-    logs: 'logs',
     notification_service: 'sendmail',
-    framework: 'express',
+    apiPath: 'api',
+    info: {
+      stable: 'v0',
+      development: 'v1',
+      apiServer: '',
+    },
     dir: {
+      logs: 'logs',
       modules: 'modules',
       plugins: 'plugins',
       public: 'public',

@@ -22,43 +22,42 @@ const APP = {
    *   init history logs
    *   init modules and plugins store
    *   init catching system errors
-   *   run all events from API module
+   *   run default plugins (graphql, websockets, rest api)
    */
   run() {
+    APP.Model.ACTIONS = APP.ACTIONS;
+    // run application step by step
     APP.initLogs();
-    APP.initModules();
+    APP.initModulesAndPlugins();
     APP.catchErrors();
-
-    /**
-     * Optionally using graphql api plugin:
-     */
-    this.ACTIONS.send('graphql')
-      .catch((warning) => this.show.warn(warning));
-    /**
-     * Optionally using websockets plugin:
-     */
-     this.ACTIONS.send('websockets')
-      .catch((warning) => this.show.warn(warning));
-    /**
-     * Start main API plugin:
-     */
-    this.ACTIONS.send('api')
-      .catch((warning) => this.show.warn(warning));
-    /**
-     * Load all postinit configurations
-     */
-    this.ACTIONS.send('postinit')
-      .catch((warning) => this.show.warn(warning));
+    APP.runMainModulesAndPlugins();
   },
 
   /**
    * Connect modules and plugins
    * transfer actions and routes to main thread
    */
-  initModules() {
+  initModulesAndPlugins() {
     MODULES.concat(PLUGINS).forEach((module) => {
       module(APP);
     });
+  },
+
+  /**
+  * Run modules and plugins
+  */
+  runMainModulesAndPlugins() {
+    /**
+     * Start main API plugin:
+     */
+    this.ACTIONS.send('api')
+      .catch((warning) => this.show.warn(warning));
+
+    /**
+     * Load all postinit configurations
+     */
+    this.ACTIONS.send('postinit')
+      .catch((warning) => this.show.warn(warning));
   },
 
   /**

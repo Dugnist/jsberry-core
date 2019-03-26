@@ -11,7 +11,7 @@
 const CONFIG = require('./config')();
 const fs = require('fs');
 const chalk = require('chalk');
-const logs = CONFIG.logs || 'logs';
+const logs = (CONFIG.dir || {}).logs || 'logs';
 
 let context = '';
 let nowDate = '';
@@ -135,7 +135,9 @@ const Logger = {
    * @param  {String} color - message color
    */
   logMessage: (message = '', color = '') => {
-    process.stdout.write(color(`${CONFIG.name} ${process.pid} - `));
+    process.stdout.write(
+      color(`${process.env.npm_package_name} ${process.pid} - `)
+    );
     process.stdout.write(`${nowDate} `);
     process.stdout.write(chalk.yellow(`[${context}] `));
     process.stdout.write(color(message));
