@@ -10,6 +10,20 @@
 
 const channels = {};
 
+const checkForAction = (action) => {
+  if (typeof action !== 'string') {
+    throw new Error(`Action name ${action} invalid!`);
+  }
+};
+
+const checkForSubscribe = (action, fn) => {
+  if (typeof fn !== 'function') {
+    throw new Error(`Subscribe parameter for action ${
+      action
+      } is not a function!`);
+  }
+};
+
 module.exports = class Mediator {
   /**
     * Subscribe to channel
@@ -18,10 +32,36 @@ module.exports = class Mediator {
     * @return {boolean} - Result of subscribe.
     */
   on(action = '', fn = () => {}) {
-    if (typeof fn !== 'function') return false;
-    if (!channels.hasOwnProperty(action)) channels[action] = [];
+    try {
+      checkForAction(action);
+      checkForSubscribe(action, fn);
+      
+      const _action = action.split('.');
 
-    channels[action] = fn;
+      const addKey = (arr, where, i) => {
+        const nextIndex = i + 1;
+        const nextKey = arr[nextIndex];
+        const isSubscribe = where[arr[i]];
+
+        if (nextKey) {
+          !isSubscribe ?
+            where[arr[i]] = {} :
+            where[arr[i]] = { ...isSubscribe };
+        } else {
+          !isSubscribe ?
+            where[arr[i]] = { _subscribe: fn } :
+            where[arr[i]] = { ...isSubscribe, _subscribe: fn };
+        }
+
+        nextKey ? addKey(arr, where[arr[i]], nextIndex) : false;
+      };
+
+      addKey(_action, channels, 0);
+
+      return true;
+    } catch (error) {
+      console.log(error.message);
+    }
   }
 
   /**
@@ -43,22 +83,34 @@ module.exports = class Mediator {
     * @param {object} payload - Parameters that will need to send to the module.
     * @return {callback} - Result of subscribe.
     */
-    send(action = '', payload = {}) {
-      return Object.keys(channels).map((_action) => {
-        const checkAction = _action.split(action);
-        if (
-          checkAction[0] === '' && checkAction[1].indexOf('.') === 0 ||
-          checkAction[0] === '' && !checkAction[1]
-        ) {
-          const response = channels[_action](payload);
+    async send(action = '', payload = {}) {
+      try {
+        const _action = action.split('.');
+        const results = [];
 
-          return (
-            response &&
-            (response instanceof Promise || response.then && response.catch)
-          ) ? response : false;
-        }
-      }).filter((result) => result)[0] ||
-        Promise.reject(`Not handled action '${action}'!`);
+        let lastAction = channels;
+
+        _action.forEach((x) =>
+          (lastAction && x) ? lastAction = lastAction[x] : null);        
+
+        if (!lastAction) throw new Error(`Not found action ${action}`);
+
+        const searchInAction = (innerAction) => {
+          const innerKeys = Object.keys(innerAction);
+
+          innerKeys.forEach((key) => {
+            (key !== '_subscribe') ?
+              searchInAction(innerAction[key]) :
+              results.unshift(innerAction._subscribe(payload));
+          });
+        };
+
+        searchInAction(lastAction);
+
+        return (results.length < 2) ? results[0] : Promise.all(results);
+      } catch (error) {
+        return Promise.reject(error.message);
+      }
     }
 
   /**
